@@ -260,7 +260,7 @@ function CategoryCombobox({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-full justify-between"
+              className="w-full max-w-80 justify-between"
             >
               {selected ? selected.name : `Buscar ${title.toLowerCase()}...`}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
