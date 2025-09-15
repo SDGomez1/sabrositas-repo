@@ -95,3 +95,39 @@ export const productBreakdown = query({
     return rows;
   },
 });
+
+export const categoryIncome = query({
+  args: {
+    startMs: v.number(),
+    endMs: v.number(),
+  },
+  handler: async (ctx, { startMs, endMs }) => {
+    const sales = await ctx.db
+      .query("sales")
+      .withIndex("by_createdAt", (q) =>
+        q.gte("createdAt", startMs).lt("createdAt", endMs)
+      )
+      .collect();
+
+    const buckets: Record<
+      "arepas" | "jugos" | "cafes" | "gaseosas",
+      { category: string; revenueCents: number }
+    > = {
+      arepas: { category: "Arepas", revenueCents: 0 },
+      jugos: { category: "Jugos", revenueCents: 0 },
+      cafes: { category: "Cafés", revenueCents: 0 },
+      gaseosas: { category: "Gaseosas", revenueCents: 0 },
+    };
+
+    for (const s of sales) {
+      for (const li of s.lineItems) {
+        const product = await ctx.db.get(li.productId);
+        if (!product) continue;
+        buckets[product.category as keyof typeof buckets].revenueCents +=
+          li.subtotalCents;
+      }
+    }
+
+    return Object.values(buckets);
+  },
+});

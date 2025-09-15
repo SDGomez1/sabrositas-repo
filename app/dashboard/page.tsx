@@ -15,6 +15,8 @@ import {
   CartesianGrid,
 } from "recharts";
 
+import { BarChart, Bar } from "recharts";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -112,6 +114,10 @@ export default function DashboardPage() {
     endMs,
   });
 
+  const catIncome = useQuery(api.analytics.categoryIncome, {
+    startMs,
+    endMs,
+  });
   const totalCents = useMemo(
     () => (data || []).reduce((sum, b) => sum + b.totalCents, 0),
     [data],
@@ -287,6 +293,62 @@ export default function DashboardPage() {
                       {r.name}
                     </TableCell>
                     <TableCell className="text-right">{r.units}</TableCell>
+                    <TableCell className="text-right">
+                      ${formatAsMoney(r.revenueCents)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Ingresos por Categoría</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Total de ingresos en el rango por categoría de producto.
+          </div>
+        </CardHeader>
+        <CardContent className="grid lg:grid-cols-2 gap-6">
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={catIncome || []}
+                layout="vertical"
+                margin={{ left: 40, right: 20, top: 20, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                />
+                <YAxis type="category" dataKey="category" />
+                <ReTooltip
+                  formatter={(v: any) => `$${formatAsMoney(v)}`}
+                  labelFormatter={(l) => `Categoría: ${l}`}
+                />
+                <Bar
+                  dataKey="revenueCents"
+                  fill="#2563eb"
+                  radius={[0, 4, 4, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead className="text-right">Ingresos</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(catIncome || []).map((r) => (
+                  <TableRow key={r.category}>
+                    <TableCell className="font-medium">{r.category}</TableCell>
                     <TableCell className="text-right">
                       ${formatAsMoney(r.revenueCents)}
                     </TableCell>
