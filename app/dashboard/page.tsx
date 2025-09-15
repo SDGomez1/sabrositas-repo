@@ -254,7 +254,6 @@ export default function DashboardPage() {
                     />
                   ))}
                 </Pie>
-                <Legend />
                 <ReTooltip
                   formatter={(v: any, name, props) => {
                     const row = props.payload as any;
