@@ -1,9 +1,9 @@
-// app/dashboard/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
 import { addDays, endOfDay, startOfDay, subDays } from "date-fns";
 import { useQuery } from "convex/react";
+import { PieChart, Pie, Cell, Legend, Tooltip as ReTooltip } from "recharts";
 import { api } from "@/convex/_generated/api";
 import {
   LineChart,
@@ -48,6 +48,24 @@ function toMs(d: Date) {
 }
 
 export default function DashboardPage() {
+  const COLORS = [
+    "#111827",
+    "#2563eb",
+    "#16a34a",
+    "#f59e0b",
+    "#ef4444",
+    "#7c3aed",
+    "#0ea5e9",
+    "#10b981",
+    "#f97316",
+    "#e11d48",
+    "#6b7280",
+    "#22c55e",
+    "#3b82f6",
+    "#a855f7",
+    "#84cc16",
+  ];
+
   const tzOffsetMinutes = new Date().getTimezoneOffset(); // e.g., 300 for GMT-5 (note: positive east of UTC negative west)
   // timeframe state
   const [preset, setPreset] = useState<"today" | "yesterday" | "7d" | "custom">(
@@ -88,6 +106,10 @@ export default function DashboardPage() {
     startMs,
     endMs,
     tzOffsetMinutes,
+  });
+  const breakdown = useQuery(api.analytics.productBreakdown, {
+    startMs,
+    endMs,
   });
 
   const totalCents = useMemo(
@@ -194,10 +216,83 @@ export default function DashboardPage() {
                         ${formatAsMoney(r.totalCents)}
                       </TableCell>
                       <TableCell className="text-right">{r.count}</TableCell>
-                      <TableCell className="text-right">${formatAsMoney(avg)}</TableCell>
+                      <TableCell className="text-right">
+                        ${formatAsMoney(avg)}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Productos vendidos (unidades)</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Muestra el total de unidades vendidas por producto en el rango
+            seleccionado.
+          </div>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={breakdown || []}
+                  dataKey="units"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                >
+                  {(breakdown || []).map((entry, index) => (
+                    <Cell
+                      key={entry.productId as any}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Legend />
+                <ReTooltip
+                  formatter={(v: any, name, props) => {
+                    const row = props.payload as any;
+                    return [
+                      `${v} unids • $${formatAsMoney(row.revenueCents)}`,
+                      row.name,
+                    ];
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Producto</TableHead>
+                  <TableHead className="text-right">Unidades</TableHead>
+                  <TableHead className="text-right">Ingresos</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(breakdown || []).map((r, i) => (
+                  <TableRow key={(r.productId as any) ?? i}>
+                    <TableCell className="font-medium flex items-center gap-2">
+                      <span
+                        className="inline-block h-3 w-3 rounded-full"
+                        style={{ background: COLORS[i % COLORS.length] }}
+                      />
+                      {r.name}
+                    </TableCell>
+                    <TableCell className="text-right">{r.units}</TableCell>
+                    <TableCell className="text-right">
+                      ${formatAsMoney(r.revenueCents)}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
