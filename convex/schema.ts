@@ -29,5 +29,17 @@ export default defineSchema({
       }),
     ),
     totalCents: v.number(),
+    promotionId: v.optional(v.id("promotions")),
+    promotionName: v.optional(v.string()),
   }).index("by_createdAt", ["createdAt"]),
+  promotions: defineTable({
+    name: v.string(),
+    type: v.union(
+      v.literal("free_arepa"),
+      v.literal("free_drink"),
+      v.literal("discount_percent"),
+    ),
+    discountPercent: v.optional(v.number()), // used if type=discount_percent
+    active: v.boolean(),
+  }).index("by_active", ["active"]),
 });

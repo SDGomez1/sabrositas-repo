@@ -11,6 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import CategoryCombobox from "@/components/form/CategoryCombobox";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Id } from "@/convex/_generated/dataModel";
 
 type CatKey = "arepas" | "jugos" | "cafes" | "gaseosas";
 
@@ -28,10 +37,14 @@ const categories: { key: CatKey; label: string }[] = [
 export default function Home() {
   const products = useQuery(api.products.listActiveByCategory, {});
   const createSale = useMutation(api.sales.createSale);
-
+  const promos = useQuery(api.promotions.listActive, {});
+  const [selectedPromo, setSelectedPromo] = useState<string | undefined>(
+    undefined,
+  );
   const [anonymous, setAnonymous] = useState(false);
   const [phone, setPhone] = useState("");
 
+  console.log(promos);
   // cart: productId -> { name, priceCents, quantity }
   const [cart, setCart] = useState<
     Record<
@@ -99,6 +112,7 @@ export default function Home() {
         anonymous,
         userPhone: anonymous ? undefined : phone.trim(),
         items,
+        promotionId: (selectedPromo as Id<"promotions">) ?? undefined,
       });
       alert(`¡Venta creada! Total: $${centsToMoney((res as any).totalCents)}`);
 
@@ -108,6 +122,7 @@ export default function Home() {
       setAnonymous(false);
       // bump key so all CategoryCombobox components reset their internal state
       setFormResetKey((k) => k + 1);
+      setSelectedPromo(undefined);
     } catch (e: any) {
       alert(e.message || "Error creando la venta");
     }
@@ -158,6 +173,29 @@ export default function Home() {
           />
         ))}
       </div>
+      {promos && promos?.length > 0 && (
+        <div className="space-y-1">
+          <Label>Promoción</Label>
+          <Select
+            value={selectedPromo ?? "none"}
+            onValueChange={(v) => {
+              setSelectedPromo(v === "none" ? undefined : v);
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Sin promoción" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Sin promoción</SelectItem>
+              {(promos || []).map((p) => (
+                <SelectItem key={p._id} value={p._id as any}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>{" "}
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex items-center gap-2">
