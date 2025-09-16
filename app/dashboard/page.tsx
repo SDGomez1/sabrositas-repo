@@ -118,10 +118,17 @@ export default function DashboardPage() {
     startMs,
     endMs,
   });
+
+  const combos = useQuery(api.analytics.comboSales, { startMs, endMs });
   const totalCents = useMemo(
     () => (data || []).reduce((sum, b) => sum + b.totalCents, 0),
     [data],
   );
+  const comboByHour = useQuery(api.analytics.comboPerHour, {
+    startMs,
+    endMs,
+    tzOffsetMinutes,
+  });
 
   return (
     <div className="max-w-5xl mx-auto p-4 space-y-6">
@@ -357,6 +364,86 @@ export default function DashboardPage() {
               </TableBody>
             </Table>
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Combos Arepa + Bebida</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {combos ? (
+            <div className="flex flex-col gap-3">
+              <div className="text-lg">
+                {combos.comboCount} de {combos.saleCount} ventas fueron combos
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {(combos.saleCount > 0
+                  ? ((combos.comboCount / combos.saleCount) * 100).toFixed(1)
+                  : 0) + "%"}{" "}
+                de las ventas contienen al menos 1 arepa + 1 bebida
+              </div>
+            </div>
+          ) : (
+            <div>Cargando…</div>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Combos por hora</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Total de ventas vs. ventas con combo (arepa + bebida).
+          </div>
+        </CardHeader>
+        <CardContent className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={comboByHour || []} margin={{ left: 20, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="label" />
+              <YAxis />
+              <ReTooltip />
+              <Legend />
+              <Bar dataKey="totalSales" fill="#6b7280" name="Total ventas" />
+              <Bar
+                dataKey="comboSales"
+                fill="#16a34a"
+                name="Ventas con combo"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalle de items en combos por hora</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Hora</TableHead>
+                <TableHead className="text-right">Total Ventas</TableHead>
+                <TableHead className="text-right">Combos</TableHead>
+                <TableHead>Items de Combos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(comboByHour || []).map((r) => (
+                <TableRow key={r.hour}>
+                  <TableCell className="font-medium">{r.label}</TableCell>
+                  <TableCell className="text-right">{r.totalSales}</TableCell>
+                  <TableCell className="text-right">{r.comboSales}</TableCell>
+                  <TableCell>
+                    {Object.entries(r.comboItems).length === 0
+                      ? "-"
+                      : Object.entries(r.comboItems)
+                          .map(([name, q]) => `${name} (${q})`)
+                          .join(", ")}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

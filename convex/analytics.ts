@@ -131,3 +131,122 @@ export const categoryIncome = query({
     return Object.values(buckets);
   },
 });
+
+export const comboSales = query({
+  args: {
+    startMs: v.number(),
+    endMs: v.number(),
+  },
+  handler: async (ctx, { startMs, endMs }) => {
+    // Fetch sales in date range
+    const sales = await ctx.db
+      .query("sales")
+      .withIndex("by_createdAt", (q) =>
+        q.gte("createdAt", startMs).lt("createdAt", endMs)
+      )
+      .collect();
+
+    let comboCount = 0;
+    let saleCount = sales.length;
+    const comboSales: Array<{
+      saleId: Id<"sales">;
+      createdAt: number;
+      totalCents: number;
+    }> = [];
+
+    for (const sale of sales) {
+      const productDocs = await Promise.all(
+        sale.lineItems.map((li) => ctx.db.get(li.productId))
+      );
+
+      const hasArepa = productDocs.some((p) => p?.category === "arepas");
+      const hasDrink = productDocs.some((p) =>
+        ["jugos", "cafes", "gaseosas"].includes(p?.category as string)
+      );
+
+      if (hasArepa && hasDrink) {
+        comboCount++;
+        comboSales.push({
+          saleId: sale._id,
+          createdAt: sale.createdAt,
+          totalCents: sale.totalCents,
+        });
+      }
+    }
+
+    return {
+      saleCount,
+      comboCount,
+      combos: comboSales,
+    };
+  },
+});
+
+
+	export const comboPerHour = query({
+	  args: {
+	    startMs: v.number(),
+	    endMs: v.number(),
+	    tzOffsetMinutes: v.number(), // like before
+	  },
+	  handler: async (ctx, { startMs, endMs, tzOffsetMinutes }) => {
+	    const sales = await ctx.db
+	      .query("sales")
+	      .withIndex("by_createdAt", (q) =>
+	        q.gte("createdAt", startMs).lt("createdAt", endMs)
+	      )
+	      .collect();
+	
+	    // Initialize buckets 8–20
+	    const buckets: Record<
+	      string,
+	      {
+	        hour: number;
+	        label: string;
+	        totalSales: number;
+	        comboSales: number;
+	        comboItems: Record<string, number>; // product name → quantity
+	      }
+	    > = {};
+	    for (let h = 8; h <= 20; h++) {
+	      const key = h.toString().padStart(2, "0");
+	      buckets[key] = {
+	        hour: h,
+	        label: `${key}:00`,
+	        totalSales: 0,
+	        comboSales: 0,
+	        comboItems: {},
+	      };
+	    }
+	
+	    for (const s of sales) {
+	      const localMs = s.createdAt - tzOffsetMinutes * 60 * 1000;
+	      const d = new Date(localMs);
+	      const h = d.getHours();
+	      if (h < 8 || h > 20) continue;
+	      const key = h.toString().padStart(2, "0");
+	
+	      buckets[key].totalSales++;
+	
+	      const productDocs = await Promise.all(
+	        s.lineItems.map((li) => ctx.db.get(li.productId))
+	      );
+	      const hasArepa = productDocs.some((p) => p?.category === "arepas");
+	      const hasDrink = productDocs.some((p) =>
+	        ["jugos", "cafes", "gaseosas"].includes(p?.category as string)
+	      );
+	
+	      if (hasArepa && hasDrink) {
+	        buckets[key].comboSales++;
+	        for (let i = 0; i < s.lineItems.length; i++) {
+	          const doc = productDocs[i];
+	          if (!doc) continue;
+	          buckets[key].comboItems[doc.name] =
+	            (buckets[key].comboItems[doc.name] || 0) + s.lineItems[i].quantity;
+	        }
+	      }
+	    }
+	
+	    return Object.values(buckets).sort((a, b) => a.hour - b.hour);
+	  },
+	});
