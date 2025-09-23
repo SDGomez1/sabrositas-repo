@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Id } from "@/convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatAsMoney } from "@/lib/utils";
 
 type CatKey = "arepas" | "jugos" | "cafes" | "gaseosas";
 
@@ -267,7 +268,7 @@ export default function Home() {
               </div>
             )}
             <div className="font-bold text-right">
-              Total: ${centsToMoney(lastSale.totalCents)}
+              Total: ${formatAsMoney(centsToMoney(lastSale.totalCents))}
             </div>
           </CardContent>
         </Card>
