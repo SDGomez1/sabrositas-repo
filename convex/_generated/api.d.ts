@@ -17,6 +17,7 @@ import type * as analytics from "../analytics.js";
 import type * as products from "../products.js";
 import type * as promotions from "../promotions.js";
 import type * as sales from "../sales.js";
+import type * as salesHistory from "../salesHistory.js";
 import type * as seed from "../seed.js";
 
 /**
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   products: typeof products;
   promotions: typeof promotions;
   sales: typeof sales;
+  salesHistory: typeof salesHistory;
   seed: typeof seed;
 }>;
 export declare const api: FilterApi<

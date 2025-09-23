@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Id } from "@/convex/_generated/dataModel";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type CatKey = "arepas" | "jugos" | "cafes" | "gaseosas";
 
@@ -38,6 +39,7 @@ export default function Home() {
   const products = useQuery(api.products.listActiveByCategory, {});
   const createSale = useMutation(api.sales.createSale);
   const promos = useQuery(api.promotions.listActive, {});
+  const lastSale = useQuery(api.salesHistory.lastSale, {});
   const [selectedPromo, setSelectedPromo] = useState<string | undefined>(
     undefined,
   );
@@ -240,6 +242,36 @@ export default function Home() {
       <Button className="w-full md:w-auto" onClick={submitSale}>
         Registrar Venta
       </Button>
+      {lastSale && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Última venta registrada</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              {new Date(lastSale.createdAt).toLocaleString()}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              {lastSale.items.map((it, idx) => (
+                <div key={idx} className="flex justify-between text-sm">
+                  <span>
+                    {it.name} x {it.quantity}
+                  </span>
+                  <span>${centsToMoney(it.subtotalCents)}</span>
+                </div>
+              ))}
+            </div>
+            {lastSale.promotionName && (
+              <div className="text-green-600 text-sm">
+                Promo aplicada: {lastSale.promotionName}
+              </div>
+            )}
+            <div className="font-bold text-right">
+              Total: ${centsToMoney(lastSale.totalCents)}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
