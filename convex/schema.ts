@@ -38,6 +38,7 @@ export default defineSchema({
       v.literal("free_arepa"),
       v.literal("free_drink"),
       v.literal("discount_percent"),
+      v.literal("combo_arepa_jugo_50"), 
     ),
     discountPercent: v.optional(v.number()), // used if type=discount_percent
     active: v.boolean(),

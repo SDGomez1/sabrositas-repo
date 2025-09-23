@@ -70,6 +70,29 @@ export const createSale = mutation({
             (totalCents * (100 - promo.discountPercent)) / 100,
           );
         }
+        if (promo.type === "combo_arepa_jugo_50") {
+          const hasArepa = products.some((p) => p?.category === "arepas");
+          const hasJugo = products.some((p) => p?.category === "jugos");
+
+          if (hasArepa && hasJugo) {
+            let arepaLine: (typeof lineItems)[0] | null = null;
+            for (let i = 0; i < products.length; i++) {
+              const p = products[i];
+              if (p?.category === "arepas") {
+                if (
+                  !arepaLine ||
+                  lineItems[i].unitPriceCents < arepaLine.unitPriceCents
+                ) {
+                  arepaLine = lineItems[i];
+                }
+              }
+            }
+            if (arepaLine) {
+              const discount = Math.floor(arepaLine.unitPriceCents * 0.5);
+              totalCents -= discount;
+            }
+          }
+        }
       }
     }
 
